@@ -1,44 +1,70 @@
-import regex
+# With out regex Pattern
+
 import os
 from itertools import combinations
+
+
+# Custom regex matching
+def matches_pattern(word, pattern):
+    if not pattern:
+        return not word
+    if len(pattern) == 1 or pattern[1] != '*':
+        if not word or (word[0] != pattern[0] and pattern[0] != '.'):
+            return False
+        return matches_pattern(word[1:], pattern[1:])
+    while word and (word[0] == pattern[0] or pattern[0] == '.'):
+        if matches_pattern(word, pattern[2:]):
+            return True
+        word = word[1:]
+    return matches_pattern(word, pattern[2:])
+
+
+# LCS function
+def find_lcs(s1, s2):
+    m, n = len(s1), len(s2)
+    dp = [['' for _ in range(n + 1)] for _ in range(m + 1)]
+    for i in range(m):
+        for j in range(n):
+            if s1[i] == s2[j]:
+                dp[i + 1][j + 1] = dp[i][j] + s1[i]
+            else:
+                dp[i + 1][j + 1] = max(dp[i + 1][j], dp[i][j + 1], key=len)
+    return dp[m][n]
+
 
 # Reading file
 with open(os.path.join(os.getcwd(), 'input.txt'), 'r') as file:
     n = int(file.readline())
-    words = [file.readline().strip().lower() for _ in range(n)]
+    words = sorted([file.readline().strip().lower() for _ in range(n)])
     regex_pattern = file.readline().strip().lower()
 
+
+
+# o(nlongn) + o(m*n)+ o(n*m*p)
 # Matching words
-matching_words = sorted([word for word in words if regex.fullmatch(regex_pattern, word)])
+matching_words = [word for word in words if matches_pattern(word, regex_pattern)][:3]
+print(matching_words)
 
-# Selecting the first three words
-selected_words = matching_words[:3]
+# Find the LCS of all permutations of the three words
+lcs = ""
+max_lcs_length = 0
+# for combo in combinations(matching_words, 2):
+#     lcs_c = find_lcs(combo[0], combo[1])
+#     if len(lcs_c) > max_lcs_length:
+#         max_lcs_length = len(lcs_c)
+#         lcs = lcs_c
 
-# Finding the longest common subsequence
-def find_lcs(s1, s2):
-    matrix = [["" for j in range(len(s2))] for i in range(len(s1))]
-    for i in range(len(s1)):
-        for j in range(len(s2)):
-            if s1[i] == s2[j]:
-                if i > 0 and j > 0:
-                    matrix[i][j] = matrix[i-1][j-1] + s1[i]
-                else:
-                    matrix[i][j] = s1[i]
-            else:
-                matrix[i][j] = max(matrix[i-1][j], matrix[i][j-1], key=len)
-
-    cs = matrix[-1][-1]
-
-    return cs
-
-# Find LCS for any two combinations and then find LCS with third one
-if len(selected_words) == 3:
-    lcs_two = find_lcs(selected_words[0], selected_words[1])
-    lcs = find_lcs(lcs_two, selected_words[2])
-elif len(selected_words) == 2:
-    lcs = find_lcs(selected_words[0], selected_words[1])
-else:
-    lcs = selected_words[0] if selected_words else ''
+# Finding LCS among first three matching words
+lcs = ''
+if len(matching_words) > 2:
+    lcs12 = find_lcs(matching_words[0], matching_words[1])
+    print(lcs12)
+    lcs = find_lcs(lcs12, matching_words[2])
+    print(lcs)
+elif len(matching_words) > 1:
+    lcs = find_lcs(matching_words[0], matching_words[1])
+elif matching_words:
+    lcs = matching_words[0]
 
 # Writing output to file
 with open(os.path.join(os.getcwd(), 'output.txt'), 'w') as file:
